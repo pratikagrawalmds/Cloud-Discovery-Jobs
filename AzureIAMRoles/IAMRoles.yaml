@@ -1,0 +1,50 @@
+trigger:
+  - none
+pr:
+  - none
+
+variables:
+ - name: storageAccountSubscriptionId
+   value: e25f921a-492f-468e-ab0c-3052e5f208d5
+
+ - name: targetStorageAccountName
+   value: wkservicenowdiscovery
+
+ - name: targetContainerName
+   value: azure
+
+ - name: targetStorageAccountResourceGroup
+   value: wk-servicenow-discovery
+
+ - name: aziamCustomRoles
+   value: azure_customroles_inventory.csv
+
+ - name: aziamBuiltInRoles
+   value: azure_builtinroles_inventory.csv
+
+stages:
+- stage: Azure
+  displayName: Azure
+  dependsOn: []
+  pool:
+    vmImage: 'windows-2019'
+  jobs:
+  - job: Azure_Roles
+    displayName: Azure Subscription IAM Roles Report
+    timeoutInMinutes: 360
+    steps:
+    - checkout: self
+    - task: AzurePowerShell@5
+      displayName: Get IAM Roles Report
+      inputs:
+        azureSubscription: 'WK-Service-Subscription'
+        ScriptType: 'FilePath'
+        ScriptPath: 'Azure/AzureIAMRoles/IAMRoles.ps1'
+        ScriptArguments: '-StorageAccountSubscriptionId "$(storageAccountSubscriptionId)" -TargetStorageAccountName "$(targetStorageAccountName)" -TargetStorageAccountResourceGroup "$(targetStorageAccountResourceGroup)" -TargetContainerName "$(targetContainerName)" -AzIAMCustomRoles "$(aziamCustomRoles)" -AzIAMBuiltInRoles "$(aziamBuiltInRoles)"'
+        azurePowerShellVersion: 'OtherVersion'
+        preferredAzurePowerShellVersion: '11.0.0'
+  
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: $(Build.ArtifactStagingDirectory)
+        artifactName: Report-Azure
